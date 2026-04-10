@@ -1,5 +1,15 @@
 import { initializeApp } from "firebase/app";
 import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
+import {
   getFirestore,
   enableIndexedDbPersistence,
   collection,
@@ -27,6 +37,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
 // Enable offline persistence
 enableIndexedDbPersistence(db).catch((err) => {
@@ -39,6 +51,9 @@ enableIndexedDbPersistence(db).catch((err) => {
 
 export {
   db,
+  auth,
+  googleProvider,
+  // Firestore
   collection,
   doc,
   addDoc,
@@ -50,4 +65,11 @@ export {
   orderBy,
   serverTimestamp,
   setDoc,
+  // Auth
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile,
+  signInWithPopup,
 };

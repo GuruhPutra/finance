@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useApp } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 import { formatCurrency } from "../utils/formatters";
 
 const NAV_ITEMS = [
@@ -15,6 +16,10 @@ const NAV_ITEMS = [
 export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { totalBalance, isOnline } = useApp();
+  const { user, logout } = useAuth();
+
+  const userInitial = user?.displayName?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U";
+  const userName = user?.displayName || user?.email?.split("@")[0] || "Pengguna";
 
   function closeSidebar() { setSidebarOpen(false); }
 
@@ -110,7 +115,38 @@ export default function Layout({ children }) {
           ))}
         </nav>
 
-        <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", fontSize: 10, color: "var(--text-muted)" }}>
+        {/* User Section */}
+        <div style={{
+          margin: "8px",
+          padding: "10px 12px",
+          borderRadius: "var(--radius-md)",
+          background: "var(--bg-input)",
+          border: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}>
+          <div style={{
+            width: 32, height: 32,
+            borderRadius: "var(--radius-full)",
+            background: "linear-gradient(135deg, var(--accent), var(--purple))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 13, fontWeight: 700, flexShrink: 0,
+          }}>{userInitial}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName}</div>
+            <div style={{ fontSize: 10, color: "var(--text-muted)" }}>Akun Aktif</div>
+          </div>
+          <button
+            id="sidebar-logout-btn"
+            onClick={logout}
+            className="btn btn-ghost btn-icon btn-sm"
+            title="Keluar"
+            style={{ fontSize: 14, flexShrink: 0, padding: "4px 6px" }}
+          >🚪</button>
+        </div>
+
+        <div style={{ padding: "8px 16px 12px", fontSize: 10, color: "var(--text-muted)" }}>
           Smart Finance Manager v1.0
         </div>
       </aside>
@@ -121,10 +157,17 @@ export default function Layout({ children }) {
           <span style={{ fontSize: 18 }}>💹</span>
           <span style={{ fontWeight: 800, fontSize: 14 }}>FinanceOS</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: isOnline ? "var(--green)" : "var(--orange)" }}>
             {formatCurrency(totalBalance, true)}
           </span>
+          <button
+            id="mobile-logout-btn"
+            className="btn btn-ghost btn-icon"
+            onClick={logout}
+            style={{ fontSize: 16, lineHeight: 1 }}
+            aria-label="Keluar"
+          >🚪</button>
           <button
             className="btn btn-ghost btn-icon"
             onClick={() => setSidebarOpen(!sidebarOpen)}
