@@ -21,11 +21,13 @@ export default function Accounts() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   function openAdd() { setForm(EMPTY_ACC); setEditTarget(null); setFormOpen(true); }
-  function openEdit(acc) { setForm({ name: acc.name, icon: acc.icon || "💳", type: acc.type || "cash", color: acc.color || "#6366f1", initialBalance: acc.initialBalance || 0 }); setEditTarget(acc); setFormOpen(true); }
+  function openEdit(acc) {
+    setForm({ name: acc.name, icon: acc.icon || "💳", type: acc.type || "cash", color: acc.color || "#6366f1", initialBalance: acc.initialBalance || 0 });
+    setEditTarget(acc); setFormOpen(true);
+  }
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    setSaving(true);
+    e.preventDefault(); setSaving(true);
     try {
       const payload = { ...form, initialBalance: Number(form.initialBalance) || 0 };
       if (editTarget) await updateAccount(editTarget.id, payload);
@@ -36,10 +38,10 @@ export default function Accounts() {
 
   return (
     <div className="animate-fade">
-      <div className="page-header flex justify-between items-center">
+      <div className="page-header-row">
         <div>
           <h1 className="page-title">Akun Keuangan</h1>
-          <p className="page-subtitle">Kelola sumber keuangan Anda — Total: {formatCurrency(totalBalance)}</p>
+          <p className="page-subtitle">Total saldo: {formatCurrency(totalBalance)}</p>
         </div>
         <button className="btn btn-primary" onClick={openAdd}>＋ Akun Baru</button>
       </div>
@@ -49,25 +51,25 @@ export default function Accounts() {
           const bal = accountBalances[acc.id] || 0;
           return (
             <div key={acc.id} className="card" style={{ borderTop: `3px solid ${acc.color || "var(--accent)"}` }}>
-              <div className="flex justify-between items-center" style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "var(--radius-md)", background: (acc.color || "#6366f1") + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: "var(--radius-md)", background: (acc.color || "#6366f1") + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
                     {acc.icon || "💳"}
                   </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 15 }}>{acc.name}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14 }} className="truncate">{acc.name}</div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "capitalize" }}>
                       {ACC_TYPES.find((t) => t.value === acc.type)?.label || acc.type}
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 4 }}>
+                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                   <button className="btn btn-ghost btn-icon btn-sm" onClick={() => openEdit(acc)}>✏️</button>
                   <button className="btn btn-danger btn-icon btn-sm" onClick={() => setDeleteConfirm(acc.id)}>🗑️</button>
                 </div>
               </div>
-              <div style={{ fontWeight: 800, fontSize: 22, color: bal >= 0 ? "var(--green)" : "var(--red)", letterSpacing: "-0.5px" }}>
-                {formatCurrency(bal)}
+              <div style={{ fontWeight: 800, fontSize: 20, color: bal >= 0 ? "var(--green)" : "var(--red)", letterSpacing: "-0.5px" }}>
+                {formatCurrency(bal, true)}
               </div>
               <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
                 Saldo awal: {formatCurrency(acc.initialBalance || 0, true)}
@@ -75,7 +77,11 @@ export default function Accounts() {
             </div>
           );
         })}
-        <div className="card" style={{ border: "1.5px dashed var(--border)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 140, gap: 8 }} onClick={openAdd}>
+        <div
+          className="card"
+          style={{ border: "1.5px dashed var(--border)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 130, gap: 8 }}
+          onClick={openAdd}
+        >
           <div style={{ fontSize: 32, opacity: 0.3 }}>＋</div>
           <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Tambah Akun</div>
         </div>

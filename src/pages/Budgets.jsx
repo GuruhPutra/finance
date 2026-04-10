@@ -17,8 +17,7 @@ export default function Budgets() {
     e.preventDefault();
     if (!form.categoryId) { setError("Pilih kategori."); return; }
     if (!form.amount || Number(form.amount) <= 0) { setError("Masukkan nominal anggaran."); return; }
-    setSaving(true);
-    setError("");
+    setSaving(true); setError("");
     try {
       await setBudget(form.categoryId, month, Number(form.amount));
       setForm({ categoryId: "", amount: "" });
@@ -33,8 +32,9 @@ export default function Budgets() {
         <p className="page-subtitle">Kelola batas pengeluaran per kategori — {format(new Date(), "MMMM yyyy")}</p>
       </div>
 
-      <div className="grid grid-2" style={{ gridTemplateColumns: "1.2fr 2fr" }}>
-        {/* Add Budget Form */}
+      {/* Uses grid-budget class (320px 1fr → 1fr on tablet) */}
+      <div className="grid grid-budget">
+        {/* Form */}
         <div className="card" style={{ height: "fit-content" }}>
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Atur Anggaran Baru</div>
           <form onSubmit={handleAddBudget} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -73,38 +73,37 @@ export default function Budgets() {
               const isDanger = b.percentage > 100;
               const isWarn = b.percentage >= 70 && b.percentage <= 100;
               const progressCls = isDanger ? "progress-danger" : isWarn ? "progress-warning" : "progress-safe";
+              const catIcon = categories.find((c) => c.id === b.categoryId)?.icon || "📦";
               return (
                 <div key={b.id} className="card" style={{ borderLeft: `3px solid ${isDanger ? "var(--red)" : isWarn ? "var(--orange)" : "var(--green)"}` }}>
-                  <div className="flex justify-between items-center" style={{ marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: "var(--radius-md)", background: b.categoryColor + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-                        {categories.find((c) => c.id === b.categoryId)?.icon || "📦"}
+                  <div className="flex justify-between items-center" style={{ marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "var(--radius-md)", background: b.categoryColor + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                        {catIcon}
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <div style={{ fontWeight: 700, fontSize: 14 }}>{b.categoryName}</div>
                         <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                          {formatCurrency(b.spent, true)} dari {formatCurrency(b.amount, true)}
+                          {formatCurrency(b.spent, true)} / {formatCurrency(b.amount, true)}
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span className={`badge ${isDanger ? "badge-expense" : isWarn ? "badge-warning" : "badge-income"}`}>
-                        {b.percentage}%
-                      </span>
-                      <button className="btn btn-danger btn-icon btn-sm" onClick={() => deleteBudget(b.id)} title="Hapus">🗑️</button>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                      <span className={`badge ${isDanger ? "badge-expense" : isWarn ? "badge-warning" : "badge-income"}`}>{b.percentage}%</span>
+                      <button className="btn btn-danger btn-icon btn-sm" onClick={() => deleteBudget(b.id)}>🗑️</button>
                     </div>
                   </div>
                   <div className="progress-bar-wrap">
                     <div className={`progress-bar-fill ${progressCls}`} style={{ width: `${pctClamped}%` }} />
                   </div>
                   {isDanger && (
-                    <div style={{ marginTop: 10, background: "var(--red-light)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "var(--radius-sm)", padding: "8px 12px", fontSize: 12, color: "var(--red)", display: "flex", alignItems: "center", gap: 6 }}>
-                      🚨 Anggaran terlampaui sebesar {formatCurrency(b.spent - b.amount, true)}!
+                    <div style={{ marginTop: 10, background: "var(--red-light)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: "var(--radius-sm)", padding: "8px 12px", fontSize: 12, color: "var(--red)" }}>
+                      🚨 Terlampaui sebesar {formatCurrency(b.spent - b.amount, true)}!
                     </div>
                   )}
                   {isWarn && !isDanger && (
-                    <div style={{ marginTop: 10, background: "var(--orange-light)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "var(--radius-sm)", padding: "8px 12px", fontSize: 12, color: "var(--orange)", display: "flex", alignItems: "center", gap: 6 }}>
-                      ⚠️ Mendekati batas anggaran — sisa {formatCurrency(b.amount - b.spent, true)}
+                    <div style={{ marginTop: 10, background: "var(--orange-light)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "var(--radius-sm)", padding: "8px 12px", fontSize: 12, color: "var(--orange)" }}>
+                      ⚠️ Mendekati batas — sisa {formatCurrency(b.amount - b.spent, true)}
                     </div>
                   )}
                 </div>
@@ -112,16 +111,17 @@ export default function Budgets() {
             })
           )}
 
-          {/* Categories without budget */}
           {expenseCategories.filter((c) => !budgets.find((b) => b.categoryId === c.id && b.month === month)).length > 0 && (
             <div className="card" style={{ borderStyle: "dashed" }}>
               <div style={{ fontWeight: 600, fontSize: 13, color: "var(--text-secondary)", marginBottom: 10 }}>Kategori tanpa anggaran</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {expenseCategories.filter((c) => !budgets.find((b) => b.categoryId === c.id && b.month === month)).map((c) => (
-                  <span key={c.id} className="badge badge-info" style={{ cursor: "pointer" }} onClick={() => setForm((f) => ({ ...f, categoryId: c.id }))}>
-                    {c.icon} {c.name}
-                  </span>
-                ))}
+                {expenseCategories
+                  .filter((c) => !budgets.find((b) => b.categoryId === c.id && b.month === month))
+                  .map((c) => (
+                    <span key={c.id} className="badge badge-info" style={{ cursor: "pointer" }} onClick={() => setForm((f) => ({ ...f, categoryId: c.id }))}>
+                      {c.icon} {c.name}
+                    </span>
+                  ))}
               </div>
             </div>
           )}
