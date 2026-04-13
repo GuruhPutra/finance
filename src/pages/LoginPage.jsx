@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const { login, register, loginWithGoogle, authError, clearError } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Halaman tujuan sebelum diarahkan ke login (jika ada)
+  const from = location.state?.from?.pathname || "/";
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [loading, setLoading] = useState(false);
@@ -39,6 +44,8 @@ export default function LoginPage() {
     try {
       if (mode === "login") {
         await login(form.email, form.password);
+        // Arahkan ke halaman yang dituju sebelumnya, atau dashboard
+        navigate(from, { replace: true });
       } else {
         const registeredEmail = form.email;
         await register(form.email, form.password, form.name.trim());

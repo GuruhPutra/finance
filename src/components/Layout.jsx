@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Outlet } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext";
 import { formatCurrency } from "../utils/formatters";
@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { to: "/categories", icon: "🏷️", label: "Kategori" },
 ];
 
-export default function Layout({ children }) {
+export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { totalBalance, isOnline } = useApp();
   const { user, logout } = useAuth();
@@ -179,7 +179,7 @@ export default function Layout({ children }) {
 
       {/* Main Content */}
       <main className="main-content">
-        {children}
+        <Outlet />
       </main>
     </div>
   );
