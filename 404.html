@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>FinanceOS</title>
+    <script>
+      // GitHub Pages SPA redirect trick
+      // Ketika GitHub Pages return 404 (karena path tidak ada sebagai file),
+      // halaman ini menangkap URL dan meng-encode path ke query string,
+      // lalu redirect ke index.html agar React Router bisa menghandle-nya.
+      var segmentCount = 1; // jumlah segmen base path: /finance/ = 1
+
+      var location = window.location;
+      location.replace(
+        location.protocol + '//' + location.hostname +
+        (location.port ? ':' + location.port : '') +
+        location.pathname.split('/').slice(0, 1 + segmentCount).join('/') +
+        '/?p=/' +
+        location.pathname.split('/').slice(1 + segmentCount).join('/').replace(/&/g, '~and~') +
+        (location.search ? '&q=' + location.search.slice(1).replace(/&/g, '~and~') : '') +
+        location.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
