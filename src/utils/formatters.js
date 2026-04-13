@@ -3,13 +3,23 @@ import { id } from "date-fns/locale";
 
 export function formatCurrency(amount, compact = false) {
   if (amount === null || amount === undefined) return "Rp 0";
-  if (compact && Math.abs(amount) >= 1_000_000) {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      maximumFractionDigits: 1,
-      notation: "compact",
-    }).format(amount);
+  // Selalu tampilkan angka lengkap dengan pemisah ribuan (titik)
+  // contoh: Rp 1.250.000 — bukan "1,3jt"
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+// Versi singkat hanya untuk ruang sangat terbatas (mis. sidebar mini)
+export function formatCurrencyCompact(amount) {
+  if (amount === null || amount === undefined) return "Rp 0";
+  if (Math.abs(amount) >= 1_000_000_000) {
+    return "Rp " + (amount / 1_000_000_000).toFixed(1).replace(".", ",") + "M";
+  }
+  if (Math.abs(amount) >= 1_000_000) {
+    return "Rp " + (amount / 1_000_000).toFixed(1).replace(".", ",") + "jt";
   }
   return new Intl.NumberFormat("id-ID", {
     style: "currency",

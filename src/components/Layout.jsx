@@ -73,7 +73,7 @@ export default function Layout() {
         }}>
           <div style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>Total Saldo</div>
           <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", marginTop: 2, letterSpacing: "-0.5px" }}>
-            {formatCurrency(totalBalance, true)}
+            {formatCurrency(totalBalance)}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 4 }}>
             <div style={{
@@ -159,7 +159,7 @@ export default function Layout() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 12, fontWeight: 700, color: isOnline ? "var(--green)" : "var(--orange)" }}>
-            {formatCurrency(totalBalance, true)}
+            {formatCurrency(totalBalance)}
           </span>
           <button
             id="mobile-logout-btn"
