@@ -8,6 +8,8 @@ import {
   onAuthStateChanged,
   updateProfile,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from "../firebase";
 
 const AuthContext = createContext(null);
@@ -18,6 +20,19 @@ export function AuthProvider({ children }) {
   const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
+    // Handle hasil redirect Google login (untuk mobile/popup-blocked)
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result?.user) {
+          setUser(result.user);
+        }
+      })
+      .catch((err) => {
+        if (err.code && err.code !== "auth/no-auth-event") {
+          setAuthError(getFriendlyError(err.code));
+        }
+      });
+
     const unsub = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
       setAuthLoading(false);
@@ -53,12 +68,28 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = async () => {
     setAuthError(null);
     try {
-      await signInWithPopup(auth, googleProvider);
+      // Coba popup dulu (desktop)
+      const result = await signInWithPopup(auth, googleProvider);
+      return result;
     } catch (err) {
-      if (err.code !== "auth/popup-closed-by-user") {
-        setAuthError(getFriendlyError(err.code));
-        throw err;
+      // Jika popup di-block (mobile / browser tertentu), pakai redirect
+      if (
+        err.code === "auth/popup-blocked" ||
+        err.code === "auth/popup-closed-by-user" ||
+        err.code === "auth/cancelled-popup-request" ||
+        err.code === "auth/operation-not-supported-in-this-environment"
+      ) {
+        if (err.code === "auth/popup-closed-by-user" ||
+            err.code === "auth/cancelled-popup-request") {
+          // User menutup popup sendiri — tidak perlu error
+          return;
+        }
+        // Popup di-block → pakai redirect
+        await signInWithRedirect(auth, googleProvider);
+        return;
       }
+      setAuthError(getFriendlyError(err.code));
+      throw err;
     }
   };
 
@@ -104,6 +135,10 @@ function getFriendlyError(code) {
       return "Terlalu banyak percobaan. Silakan coba beberapa saat lagi.";
     case "auth/network-request-failed":
       return "Gagal terhubung. Periksa koneksi internet Anda.";
+    case "auth/unauthorized-domain":
+      return "Domain ini belum diotorisasi. Hubungi administrator.";
+    case "auth/internal-error":
+      return "Terjadi kesalahan internal. Silakan coba lagi.";
     default:
       return "Terjadi kesalahan. Silakan coba lagi.";
   }

@@ -65,7 +65,12 @@ export default function LoginPage() {
     setGoogleLoading(true);
     setLocalError(null);
     try {
-      await loginWithGoogle();
+      const result = await loginWithGoogle();
+      // Jika popup berhasil (result ada), langsung navigate
+      // Jika redirect, navigasi akan ditangani otomatis oleh onAuthStateChanged
+      if (result?.user) {
+        navigate(from, { replace: true });
+      }
     } catch {
       // error shown via authError
     } finally {
