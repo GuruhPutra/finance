@@ -42,6 +42,8 @@ export function AuthProvider({ children }) {
       if (displayName) {
         await updateProfile(cred.user, { displayName });
       }
+      // Sign out immediately so the user must log in manually after registration
+      await signOut(auth);
     } catch (err) {
       setAuthError(getFriendlyError(err.code));
       throw err;

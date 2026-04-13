@@ -778,6 +778,20 @@ body {
   margin-bottom: 16px;
 }
 
+/* Success */
+.login-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--green);
+  margin-bottom: 16px;
+}
+
 /* Form */
 .login-form {
   display: flex;
