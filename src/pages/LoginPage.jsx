@@ -9,10 +9,12 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState(null); // shows success banner after register
 
   useEffect(() => {
     clearError();
     setLocalError(null);
+    if (mode !== "login") setRegisteredEmail(null);
   }, [mode]);
 
   const error = localError || authError;
@@ -39,6 +41,11 @@ export default function LoginPage() {
         await login(form.email, form.password);
       } else {
         await register(form.email, form.password, form.name.trim());
+        // Registration success → switch to login tab with success message
+        const email = form.email;
+        setForm({ name: "", email: "", password: "", confirmPassword: "" });
+        setRegisteredEmail(email);
+        setMode("login");
       }
     } catch {
       // error shown via authError
@@ -98,6 +105,14 @@ export default function LoginPage() {
             Daftar
           </button>
         </div>
+
+        {/* Registration Success Banner */}
+        {registeredEmail && mode === "login" && (
+          <div className="login-success animate-slide-up">
+            <span>✅</span>
+            <span>Akun berhasil dibuat! Silakan login dengan <strong>{registeredEmail}</strong>.</span>
+          </div>
+        )}
 
         {/* Error Banner */}
         {error && (

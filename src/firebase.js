@@ -21,6 +21,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
@@ -63,6 +64,7 @@ export {
   onSnapshot,
   query,
   orderBy,
+  where,
   serverTimestamp,
   setDoc,
   // Auth

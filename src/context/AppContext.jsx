@@ -3,6 +3,7 @@ import {
   db, collection, doc, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, orderBy, serverTimestamp, setDoc,
 } from "../firebase";
+import { useAuth } from "./AuthContext";
 
 const AppContext = createContext(null);
 
@@ -27,22 +28,35 @@ const DEFAULT_ACCOUNTS = [
   { id: "acc_ewallet", name: "E-Wallet", icon: "📱", type: "ewallet", color: "#a855f7", initialBalance: 0 },
 ];
 
-async function seedDefaults(existingCategories, existingAccounts) {
+// Helper: returns the root collection path scoped to the current user
+function userCol(uid, col) {
+  return collection(db, "users", uid, col);
+}
+
+// Helper: returns a doc ref scoped to the current user
+function userDoc(uid, col, id) {
+  return doc(db, "users", uid, col, id);
+}
+
+async function seedDefaults(uid, existingCategories, existingAccounts) {
   if (existingCategories.length === 0) {
     for (const cat of DEFAULT_CATEGORIES) {
       const { id, ...data } = cat;
-      await setDoc(doc(db, "categories", id), { ...data, createdAt: serverTimestamp() });
+      await setDoc(userDoc(uid, "categories", id), { ...data, createdAt: serverTimestamp() });
     }
   }
   if (existingAccounts.length === 0) {
     for (const acc of DEFAULT_ACCOUNTS) {
       const { id, ...data } = acc;
-      await setDoc(doc(db, "accounts", id), { ...data, createdAt: serverTimestamp() });
+      await setDoc(userDoc(uid, "accounts", id), { ...data, createdAt: serverTimestamp() });
     }
   }
 }
 
 export function AppProvider({ children }) {
+  const { user } = useAuth();
+  const uid = user?.uid;
+
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -50,88 +64,146 @@ export function AppProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
+  // Online/offline listener
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
-    return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
   }, []);
 
+  // Firestore listeners — re-run whenever the authenticated user changes
   useEffect(() => {
-    let seeded = false;
-    const unsubCat = onSnapshot(query(collection(db, "categories"), orderBy("name")), (snap) => {
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setCategories(data);
-      if (!seeded) {
-        const unsubAcc = onSnapshot(query(collection(db, "accounts"), orderBy("name")), (snapAcc) => {
-          const accs = snapAcc.docs.map((d) => ({ id: d.id, ...d.data() }));
-          setAccounts(accs);
-          if (!seeded) { seeded = true; seedDefaults(data, accs); }
-        });
-        return () => unsubAcc();
-      }
-    });
-
-    const unsubAcc = onSnapshot(query(collection(db, "accounts"), orderBy("name")), (snap) => {
-      setAccounts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
-
-    const unsubTx = onSnapshot(query(collection(db, "transactions"), orderBy("date", "desc")), (snap) => {
-      setTransactions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    if (!uid) {
+      // User logged out — clear all state
+      setTransactions([]);
+      setCategories([]);
+      setAccounts([]);
+      setBudgets([]);
       setLoading(false);
-    });
+      return;
+    }
 
-    const unsubBudget = onSnapshot(collection(db, "budgets"), (snap) => {
-      setBudgets(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
+    setLoading(true);
+    let seeded = false;
 
-    return () => { unsubCat(); unsubAcc(); unsubTx(); unsubBudget(); };
-  }, []);
+    const unsubCat = onSnapshot(
+      query(userCol(uid, "categories"), orderBy("name")),
+      (snap) => {
+        const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setCategories(data);
+        if (!seeded) {
+          seeded = true;
+          // Seed defaults only on first load and only if collections are empty
+          const unsubAccOnce = onSnapshot(
+            query(userCol(uid, "accounts"), orderBy("name")),
+            (snapAcc) => {
+              const accs = snapAcc.docs.map((d) => ({ id: d.id, ...d.data() }));
+              seedDefaults(uid, data, accs);
+              unsubAccOnce(); // only needed once for seeding
+            }
+          );
+        }
+      }
+    );
 
-  // Transactions CRUD
+    const unsubAcc = onSnapshot(
+      query(userCol(uid, "accounts"), orderBy("name")),
+      (snap) => {
+        setAccounts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      }
+    );
+
+    const unsubTx = onSnapshot(
+      query(userCol(uid, "transactions"), orderBy("date", "desc")),
+      (snap) => {
+        setTransactions(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      }
+    );
+
+    const unsubBudget = onSnapshot(
+      userCol(uid, "budgets"),
+      (snap) => {
+        setBudgets(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      }
+    );
+
+    return () => {
+      unsubCat();
+      unsubAcc();
+      unsubTx();
+      unsubBudget();
+    };
+  }, [uid]);
+
+  // ── Transactions CRUD ──────────────────────────────────────────────────────
   const addTransaction = useCallback(async (data) => {
-    await addDoc(collection(db, "transactions"), { ...data, createdAt: serverTimestamp() });
-  }, []);
+    if (!uid) return;
+    await addDoc(userCol(uid, "transactions"), { ...data, createdAt: serverTimestamp() });
+  }, [uid]);
+
   const updateTransaction = useCallback(async (id, data) => {
-    await updateDoc(doc(db, "transactions", id), data);
-  }, []);
+    if (!uid) return;
+    await updateDoc(userDoc(uid, "transactions", id), data);
+  }, [uid]);
+
   const deleteTransaction = useCallback(async (id) => {
-    await deleteDoc(doc(db, "transactions", id));
-  }, []);
+    if (!uid) return;
+    await deleteDoc(userDoc(uid, "transactions", id));
+  }, [uid]);
 
-  // Categories CRUD
+  // ── Categories CRUD ────────────────────────────────────────────────────────
   const addCategory = useCallback(async (data) => {
-    await addDoc(collection(db, "categories"), { ...data, createdAt: serverTimestamp() });
-  }, []);
+    if (!uid) return;
+    await addDoc(userCol(uid, "categories"), { ...data, createdAt: serverTimestamp() });
+  }, [uid]);
+
   const updateCategory = useCallback(async (id, data) => {
-    await updateDoc(doc(db, "categories", id), data);
-  }, []);
+    if (!uid) return;
+    await updateDoc(userDoc(uid, "categories", id), data);
+  }, [uid]);
+
   const deleteCategory = useCallback(async (id) => {
-    await deleteDoc(doc(db, "categories", id));
-  }, []);
+    if (!uid) return;
+    await deleteDoc(userDoc(uid, "categories", id));
+  }, [uid]);
 
-  // Accounts CRUD
+  // ── Accounts CRUD ──────────────────────────────────────────────────────────
   const addAccount = useCallback(async (data) => {
-    await addDoc(collection(db, "accounts"), { ...data, createdAt: serverTimestamp() });
-  }, []);
+    if (!uid) return;
+    await addDoc(userCol(uid, "accounts"), { ...data, createdAt: serverTimestamp() });
+  }, [uid]);
+
   const updateAccount = useCallback(async (id, data) => {
-    await updateDoc(doc(db, "accounts", id), data);
-  }, []);
+    if (!uid) return;
+    await updateDoc(userDoc(uid, "accounts", id), data);
+  }, [uid]);
+
   const deleteAccount = useCallback(async (id) => {
-    await deleteDoc(doc(db, "accounts", id));
-  }, []);
+    if (!uid) return;
+    await deleteDoc(userDoc(uid, "accounts", id));
+  }, [uid]);
 
-  // Budgets CRUD
+  // ── Budgets CRUD ───────────────────────────────────────────────────────────
   const setBudget = useCallback(async (categoryId, month, amount) => {
+    if (!uid) return;
     const budgetId = `${categoryId}_${month}`;
-    await setDoc(doc(db, "budgets", budgetId), { categoryId, month, amount, updatedAt: serverTimestamp() });
-  }, []);
-  const deleteBudget = useCallback(async (id) => {
-    await deleteDoc(doc(db, "budgets", id));
-  }, []);
+    await setDoc(userDoc(uid, "budgets", budgetId), {
+      categoryId, month, amount, updatedAt: serverTimestamp(),
+    });
+  }, [uid]);
 
-  // Compute account balances
+  const deleteBudget = useCallback(async (id) => {
+    if (!uid) return;
+    await deleteDoc(userDoc(uid, "budgets", id));
+  }, [uid]);
+
+  // ── Derived values ─────────────────────────────────────────────────────────
   const accountBalances = accounts.reduce((acc, account) => {
     const init = account.initialBalance || 0;
     const txTotal = transactions
@@ -140,6 +212,7 @@ export function AppProvider({ children }) {
     acc[account.id] = init + txTotal;
     return acc;
   }, {});
+
   const totalBalance = Object.values(accountBalances).reduce((s, v) => s + v, 0);
 
   const value = {
