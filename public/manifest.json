@@ -1,0 +1,29 @@
+{
+  "name": "FinanceOS – Smart Finance Manager",
+  "short_name": "FinanceOS",
+  "description": "Kelola keuangan pribadi Anda dengan cerdas",
+  "start_url": "/finance/",
+  "scope": "/finance/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d0d14",
+  "theme_color": "#6366f1",
+  "lang": "id",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {
+      "src": "/finance/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/finance/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
